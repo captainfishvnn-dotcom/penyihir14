@@ -40,7 +40,6 @@
             overflow-x: hidden;
         }
 
-        /* Ambient Background Overlay */
         .bg-castle-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -53,7 +52,6 @@
             z-index: -2;
         }
 
-        /* Canvas Partikel Canvas Sihir */
         #magicCanvas {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -61,7 +59,6 @@
             z-index: -1;
         }
 
-        /* Card Hover Effects */
         .magic-card {
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
@@ -72,7 +69,6 @@
             box-shadow: 0 15px 35px rgba(147, 88, 222, 0.4), 0 0 25px rgba(212, 175, 55, 0.3);
         }
 
-        /* Glow Animation */
         @keyframes pulseGlow {
             0%, 100% { filter: drop-shadow(0 0 8px rgba(243, 229, 171, 0.4)); }
             50% { filter: drop-shadow(0 0 18px rgba(212, 175, 55, 0.8)); }
@@ -81,7 +77,6 @@
             animation: pulseGlow 4s infinite ease-in-out;
         }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -97,7 +92,6 @@
             background: #6b359c;
         }
 
-        /* Tab Active Styling */
         .tab-btn.active {
             background: linear-gradient(135deg, #6b359c, #3b1c63);
             border-color: #f3e5ab;
@@ -108,11 +102,8 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between relative selection:bg-magic-purple selection:text-white">
 
-    <!-- Elemen Audio Musik Latar dari File Empat (video_1.mp4) -->
-    <audio id="castleBackgroundAudio" loop>
-        <source src="video_1.mp4" type="video/mp4">
-        Peramban Anda tidak mendukung pemutar audio.
-    </audio>
+    <!-- Elemen Audio Utama / Pemutar Musik Kastil -->
+    <audio id="castleAudio" preload="auto"></audio>
 
     <!-- Layer Background Visual & Canvas Partikel -->
     <div class="bg-castle-overlay"></div>
@@ -129,12 +120,17 @@
         </div>
 
         <!-- Audio Controls & Tools -->
-        <div class="flex items-center space-x-3 text-sm">
+        <div class="flex items-center flex-wrap gap-2 text-sm">
+            <!-- Pemutar Musik Mini di Header -->
+            <div class="flex items-center bg-magic-deepPurple/90 border border-magic-goldBorder rounded-xl px-3 py-1.5 gap-2 shadow-lg">
+                <button onclick="prevSong()" title="Lagu Sebelumnya" class="text-magic-gold hover:text-white text-xs">⏮️</button>
+                <button id="playPauseBtn" onclick="togglePlay()" title="Putar / Jeda" class="text-magic-gold hover:text-white font-bold px-1">▶️</button>
+                <button onclick="nextSong()" title="Lagu Berikutnya" class="text-magic-gold hover:text-white text-xs">⏭️</button>
+                <span id="nowPlayingText" class="text-xs text-magic-gold truncate max-w-[120px] font-cinzel">Memuat Musik...</span>
+            </div>
+
             <button id="spellMakerBtn" onclick="toggleSpellMaker()" class="px-3 py-2 rounded-lg bg-magic-deepPurple/80 border border-magic-goldBorder text-magic-gold hover:bg-magic-purple/60 transition flex items-center gap-1.5 shadow-lg">
                 <span>🪄</span> Pembuat Mantra
-            </button>
-            <button id="audioToggleBtn" onclick="toggleAmbientAudio()" class="px-3 py-2 rounded-lg bg-magic-deepPurple/80 border border-magic-goldBorder text-magic-gold hover:bg-magic-purple/60 transition flex items-center gap-1.5 shadow-lg">
-                <span id="audioIcon">🔇</span> Musik Kastil
             </button>
         </div>
     </header>
@@ -605,10 +601,66 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
+        /* ================= PLAYLIST AUDIO KASTIL ================= */
+        const playlist = [
+            { title: "Melodi Utama Kastil", src: "video_1.mp4" },
+            { title: "Lagu Sihir I (MP3)", src: "tiktokio.com1794220438_seECcKV7FjHEkhzWsvim.mp3" },
+            { title: "Lagu Sihir II (MP3)", src: "tiktokio.com1794222988_y8NgQEy9iHjusqfpeLRi.mp3" },
+            { title: "Lagu Sihir III (MP3)", src: "tiktokio.com1794224022_QLpEGjOKaiqWmcA16li0.mp3" }
+        ];
+
+        let currentSongIndex = 0;
+        let isPlaying = false;
+        const audioElement = document.getElementById('castleAudio');
+
+        function loadSong(index) {
+            currentSongIndex = index;
+            audioElement.src = playlist[currentSongIndex].src;
+            document.getElementById('nowPlayingText').textContent = playlist[currentSongIndex].title;
+            audioElement.load();
+        }
+
+        function togglePlay() {
+            playSpellSound();
+            if (!isPlaying) {
+                audioElement.play().then(() => {
+                    isPlaying = true;
+                    document.getElementById('playPauseBtn').textContent = "⏸️";
+                }).catch(e => {
+                    alert("Gagal memutar audio. Pastikan file lagu berada di folder yang sama!");
+                });
+            } else {
+                audioElement.pause();
+                isPlaying = false;
+                document.getElementById('playPauseBtn').textContent = "▶️";
+            }
+        }
+
+        function nextSong() {
+            currentSongIndex = (currentSongIndex + 1) % playlist.length;
+            loadSong(currentSongIndex);
+            if (isPlaying) audioElement.play();
+        }
+
+        function prevSong() {
+            currentSongIndex = (currentSongIndex - 1 + playlist.length) % playlist.length;
+            loadSong(currentSongIndex);
+            if (isPlaying) audioElement.play();
+        }
+
+        // Otomatis putar lagu berikutnya jika lagu saat ini habis
+        audioElement.addEventListener('ended', () => {
+            nextSong();
+            if (isPlaying) audioElement.play();
+        });
+
+        // Inisialisasi lagu pertama saat halaman dimuat
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSong(0);
+        });
+
         /* ================= STATE & VARS ================= */
         let currentTopic = 'deskripsi';
-        let isAudioPlaying = false;
-        const castleAudio = document.getElementById('castleBackgroundAudio');
 
         /* Quiz Data per Topic */
         const quizData = {
@@ -694,7 +746,7 @@
             ]
         };
 
-        /* ================= AUDIO CONTROLLER (Memutar Lagu dari File Empat / video_1.mp4) ================= */
+        /* ================= AUDIO EFFECT KODE MANTRA ================= */
         function playSpellSound() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -702,8 +754,8 @@
                 const gain = ctx.createGain();
 
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-                osc.frequency.exponentialRampToValueAtTime(1046.50, ctx.currentTime + 0.3); // C6
+                osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1046.50, ctx.currentTime + 0.3);
 
                 gain.gain.setValueAtTime(0.15, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
@@ -713,29 +765,7 @@
 
                 osc.start();
                 osc.stop(ctx.currentTime + 0.3);
-            } catch(e) {
-                // Audio not allowed without interaction
-            }
-        }
-
-        function toggleAmbientAudio() {
-            const btn = document.getElementById('audioToggleBtn');
-            const icon = document.getElementById('audioIcon');
-
-            if(!isAudioPlaying) {
-                castleAudio.play().then(() => {
-                    isAudioPlaying = true;
-                    icon.textContent = "🔊";
-                    btn.classList.add('bg-magic-purple');
-                }).catch(error => {
-                    alert('Gagal memutar audio musik latar. Pastikan peramban mengizinkan pemutaran.');
-                });
-            } else {
-                castleAudio.pause();
-                isAudioPlaying = false;
-                icon.textContent = "🔇";
-                btn.classList.remove('bg-magic-purple');
-            }
+            } catch(e) {}
         }
 
         /* ================= NAVIGATION LOGIC ================= */
@@ -746,16 +776,12 @@
             document.getElementById('main-hub').classList.add('hidden');
             document.getElementById('topic-detail-container').classList.remove('hidden');
 
-            // Hide all topics first
             document.querySelectorAll('.topic-article').forEach(el => el.classList.add('hidden'));
 
-            // Show selected topic
             const target = document.getElementById(`${topic}-content`);
             if(target) target.classList.remove('hidden');
 
-            // Default to Materi tab
             switchTab('materi');
-
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -824,7 +850,6 @@
             playSpellSound();
             const questions = quizData[currentTopic];
             
-            // Disable all options in this question
             for (let i = 0; i < 4; i++) {
                 const btn = document.getElementById(`q_${qIdx}_opt_${i}`);
                 if (btn) btn.disabled = true;
@@ -848,7 +873,6 @@
                 userAnswers[qIdx] = false;
             }
 
-            // Update score count
             const correctCount = Object.values(userAnswers).filter(v => v === true).length;
             document.getElementById('currentScore').textContent = correctCount;
         }
@@ -881,7 +905,7 @@
             resultBox.classList.remove('hidden');
         }
 
-        /* ================= CANVAS CANVAS CANVAS MAGIC PARTICLES ================= */
+        /* ================= CANVAS MAGIC PARTICLES ================= */
         const canvas = document.getElementById('magicCanvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
@@ -901,7 +925,7 @@
                 this.size = Math.random() * 2.5 + 0.5;
                 this.speedY = Math.random() * 0.4 + 0.1;
                 this.opacity = Math.random() * 0.7 + 0.2;
-                this.hue = Math.random() > 0.5 ? 45 : 270; // Gold or Purple
+                this.hue = Math.random() > 0.5 ? 45 : 270;
             }
             update() {
                 this.y -= this.speedY;
